@@ -1,0 +1,25 @@
+{
+  "name": "trafficaq",
+  "version": "1.0.0",
+  "description": "A simple dashboard for FCD traffic and Air Quality Indices",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joemureithi/trafficaq.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/joemureithi/trafficaq/issues"
+  },
+  "homepage": "https://github.com/joemureithi/trafficaq#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "leaflet-groupedlayercontrol": "^0.6.1"
+  }
+}
