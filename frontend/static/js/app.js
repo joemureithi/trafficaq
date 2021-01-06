@@ -44,7 +44,7 @@ function getColor(d) {
         '#FF5733';
 }
 
-function myStyle(feature) {
+function fcdStyle(feature) {
     return {
         color: getColor(feature.properties.speed),
         weight: 5,
@@ -53,7 +53,7 @@ function myStyle(feature) {
 
 // Add Layers
 let inrixTraffic = L.geoJSON(null, {
-    style: myStyle,
+    style: fcdStyle,
     onEachFeature: function (feature, layer) {
         layer.bindTooltip(`${feature.properties.speed.toString()} km/h`);
     }
@@ -75,6 +75,17 @@ async function fetchData(url) {
     return data;
 };
 
+// Traffic Layers
+function trafficLayer(tUrl, tLayer){
+    (async () => {
+    let trafficData = await fetchData(tUrl)
+    console.log(trafficData[0]['traffic']);
+    tLayer.clearLayers();
+    tLayer.addData(trafficData[0]['traffic']);
+})();
+
+}
+
 // Load Data
 function loadFCData(timestamp) {
     // Time Element
@@ -82,20 +93,13 @@ function loadFCData(timestamp) {
     // let t = (new Date(parseInt(timestamp*1000))).toUTCString();
     timeElement.html(t.slice(0, 20));
 
-    //    Traffic URLs
+    // Traffic URLs
     let inrixTrafficUrl = `${trafficAPI}inrix?tQuery=${timestamp}`;
-
-    (async () => {
-        // INRIX FCD Layer
-        let inrixData = await fetchData(inrixTrafficUrl)
-        console.log(inrixData[0]['traffic']);
-        inrixTraffic.clearLayers();
-        inrixTraffic.addData(inrixData[0]['traffic']);
-
-    })();
+    
+    // Load FCD Layers
+    trafficLayer(inrixTrafficUrl, inrixTraffic);
 
 };
-
 
 
 function loadWeatherData(timestamp, lat, lon) {
@@ -113,7 +117,6 @@ $(document).ready(function () {
     timeslider.attr('step', 600);
 
 });
-
 
 // On Slide
 timeslider.on("input change", function (e) {
