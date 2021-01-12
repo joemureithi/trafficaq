@@ -21,32 +21,25 @@ map.setView([lat, lon], 14);
 
 // Bounds
 let bounds = map.getBounds();
-bounds =
-    bounds.getNorth() +
-    "," +
-    bounds.getWest() +
-    "," +
-    bounds.getSouth() +
-    "," +
-    bounds.getEast();
+bounds = `${bounds.getNorth()},${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()}`;
 
 
 // Add Basemaps
 const osm = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 20,
-    attribution: '&copy; OSM Mapnik <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    attribution: '| &copy; OSM Mapnik <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 });
 
 const positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap, &copy; CartoDB'
+    attribution: '| &copy; OpenStreetMap, &copy; CartoDB'
 }).addTo(map);
 
 const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap, &copy; CartoDB'
+    attribution: '| &copy; OpenStreetMap, &copy; CartoDB'
 });
 
 const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    attribution: '| Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
 });
 
 let baseMaps = {
@@ -106,7 +99,6 @@ async function fetchData(url) {
 function trafficLayer(tUrl, tLayer) {
     (async () => {
         let trafficData = await fetchData(tUrl)
-        // console.log(trafficData[0][' traffic']);
         tLayer.clearLayers();
         tLayer.addData(trafficData[0]['traffic']);
     })();
@@ -116,7 +108,6 @@ function trafficLayer(tUrl, tLayer) {
 // Load Datasets
 // FCD
 function loadFCData(timestamp) {
-    // Time Element
     let t = (((new Date(parseInt(timestamp * 1000))).toLocaleString()).replace('T', ' ')).replace('Z', ' ');
     // let t = (new Date(parseInt(timestamp*1000))).toUTCString();
     timeElement.html(t.slice(0, 22));
@@ -133,19 +124,18 @@ function loadFCData(timestamp) {
 
 };
 
-
+// TODO : Add weather data
 // Weather
 function loadWeatherData(timestamp, lat, lon) {
-    // console.log(`Timestamp: ${new Date(parseInt(timestamp * 1000)).toLocaleString()}, Lat: ${lat}, Lon: ${lon}`)
     let weatherUrl = `http://api.weatherapi.com/v1/current.json?key=a219d673b1b843bc8ce214607210601&q=${lat},${lon}&unixdt=${timestamp}`
 }
 
 
 // AQI
 // https://aqicn.org/faq/2015-09-18/map-web-service-real-time-air-quality-tile-api/
-let waqiAttr = 'Air  Quality  Tiles  &copy;  <a  href="http://waqi.info">waqi.info</a>';
+let waqiAttr = '| Air  Quality  Tiles  &copy;  <a  href="http://waqi.info">waqi.info</a>';
 let waqiUrl = `https://tiles.waqi.info/tiles/usepa-aqi/{z}/{x}/{y}.png?token=${aqiToken}`;
-let wAQI = L.tileLayer(waqiUrl, { attribution: waqiAttr}).addTo(map);
+let wAQI = L.tileLayer(waqiUrl, { attribution: waqiAttr }).addTo(map);
 
 
 
@@ -160,103 +150,211 @@ let getRoundedDate = (minutes, d = new Date()) => {
     return roundedDate
 };
 
-// Load CAMS  Layers
+// CAMS  Layers
 let extent = L.latLngBounds(L.latLng(47, 5), L.latLng(55, 15));
 let camsUrl = 'https://apps.ecmwf.int/wms/?token=public&request=GetCapabilities&version=1.3.0';
-// PM2.5
-let camsP25 = L.tileLayer.wms(camsUrl, {
-    layers: 'composition_europe_pm2p5_forecast_surface',
-    format: 'image/png',
-    transparent: true,
-    opacity: 0.7,
-    useCache: true,
-    bounds: extent,
+let year = (new Date ()).getFullYear();;
+let camsAttr = '| Generated using Copernicus Atmosphere Monitoring Service Information '+ year+'';
 
+// Create CAMS Layers
 
-});
-// PM10
-let camsP10 = L.tileLayer.wms(camsUrl, {
-    layers: 'composition_europe_pm10_forecast_surface',
-    format: 'image/png',
-    transparent: true,
-    opacity: 0.7,
-});
+function createCAMS(camsUrl, layer) {
+    let camsLayer = L.tileLayer.wms(camsUrl, {
+        layers: layer,
+        format: 'image/png',
+        transparent: true,
+        bounds: extent,
+        attribution: camsAttr,
+
+    });
+    return camsLayer;
+};
+
+// TODO CLEAN CODE: Create a CAMS object and iterate to create/update layers and legends
+let camsP25 = createCAMS(camsUrl, 'composition_europe_pm2p5_forecast_surface')
+let camsP10 = createCAMS(camsUrl, 'composition_europe_pm10_forecast_surface')
+let camsNO2 = createCAMS(camsUrl, 'composition_europe_no2_forecast_surface')
+let camsSO2 = createCAMS(camsUrl, 'composition_europe_so2_forecast_surface')
 
 
 // Update CAMS layers based on the timestamp
 function updateCAMS(timestamp) {
     let camsTime = (getRoundedDate(60, new Date(parseInt(timestamp * 1000)))).toISOString();
-    console.log(camsTime);
     camsP25.setParams({ time: camsTime, });
     camsP10.setParams({ time: camsTime, });
+    camsNO2.setParams({ time: camsTime, });
+    camsSO2.setParams({ time: camsTime, });
 
 };
 
-
-// On Load
-$(document).ready(function () {
-    console.log("GO!");
-    loadFCData(tCurrent);
-    updateCAMS(tCurrent);
-    timeslider.attr('min', tCurrent - 84000);
-    timeslider.attr('max', tCurrent);
-    timeslider.attr('value', tCurrent);
-    timeslider.attr('step', 600);
-
-});
-
-// On Slide
-timeslider.on("input change", function (e) {
-    timestamp = $(this).val()
-    // console.log(timestamp);
-    loadFCData(timestamp);
-    updateCAMS(timestamp);
-
-})
-
-// On Map Move
-map.on("moveend", function () {
-    // console.log(L.latLng(map.getCenter()))
-    lat = L.latLng(map.getCenter()).lat
-    lon = L.latLng(map.getCenter()).lng
-    // loadWeatherData(timestamp, lat, lon);
-    bounds = map.getBounds();
-    let boundsNew =
-        bounds.getNorth() +
-        "," +
-        bounds.getWest() +
-        "," +
-        bounds.getSouth() +
-        "," +
-        bounds.getEast();
-
-});
-
-
+// Legends
 // FCD Legend
-let FCDlegend = L.control({ position: 'bottomright' });
+function fcdLegend(layer, name) {
+    let legend = L.control.htmllegend({
+        position: 'bottomleft',
+        legends: [{
+            name: name,
+            layer: layer,
+            elements: [{
+                label: '',
+                html: `<br><br>
+                <table>
+                <caption>km/h</caption>
+                                <tr>
+                                  <td style="background-color: #0E970E; width: 20px;">&nbsp;</td>
+                                  <td> > 80</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #F1F627;">&nbsp;</td>
+                                  <td> 40 - 80</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #FF5733;">&nbsp;</td>
+                                  <td> 0 - 40</td>
+                                </tr>                             
+                              </table>`
+            }]
+        }],
+        defaultOpacity: 0.5,
+        collapseSimple: false,
+        detectStretched: true,
+        visibleIcon: 'icon icon-eye',
+        hiddenIcon: 'icon icon-eye-slash',
+    }).addTo(map);
 
-FCDlegend.onAdd = function (map) {
-
-    let div = L.DomUtil.create('div', 'info legend'),
-        grades = [0, 40, 80],
-        labels = ['<strong> FCD Speeds (km/h) </strong> <br>'],
-        from, to;
-
-    for (let i = 0; i < grades.length; i++) {
-        from = grades[i];
-        to = grades[i + 1];
-
-        labels.push(
-            '<i style="background:' + getColor(from + 1) + '"></i> ' +
-            from + (to ? ' &ndash; ' + to : '+'));
-    }
-
-    div.innerHTML = labels.join('<br>');
-    return div;
+    return legend;
 };
 
-FCDlegend.addTo(map);
+fcdLegend(inrixTraffic, 'INRIX');
+fcdLegend(hereTraffic, 'HERE');
+fcdLegend(tomtomTraffic, 'TomTom');
+
+// WAQI Legend
+L.control.htmllegend({
+    position: 'bottomleft',
+    legends: [{
+        name: 'World AQI',
+        layer: wAQI,
+        elements: [{
+            label: '',
+            html: `
+            <br><br>
+                <table>
+                <caption>Air Quality Levels</caption>
+                                <tr>
+                                  <td style="background-color: #7e0023; width: 20px;">&nbsp;</td>
+                                  <td> > 300 (Hazardous)</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #660099;">&nbsp;</td>
+                                  <td>201 - 300 (V. Unhealthy)</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #cc0033;">&nbsp;</td>
+                                  <td>151 - 200 (Unhealthy)</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #ff9933;">&nbsp;</td>
+                                  <td>101 - 150 (Risk Groups)</td>
+                                </tr>  
+                                <tr>
+                                  <td style="background-color: #ffde33;">&nbsp;</td>
+                                  <td>51 - 100 (Moderate)</td>
+                                </tr>  
+                                <tr>
+                                  <td style="background-color: #009966;">&nbsp;</td>
+                                  <td>0 - 50 (Good)</td>
+                                </tr>                               
+                              </table>
+            `
+        }]
+    }],
+    defaultOpacity: 1,
+    collapseSimple: false,
+    detectStretched: true,
+    visibleIcon: 'icon icon-eye',
+    hiddenIcon: 'icon icon-eye-slash',
+}).addTo(map);
+
+
+// CAMS legend
+function camsLegend(layer, name) {
+    let legend = L.control.htmllegend({
+        position: 'bottomleft',
+        legends: [{
+            name: name,
+            layer: layer,
+            elements: [{
+                label: '',
+                html: `<br><br>
+                <table>
+                <caption>µg/m<sup>3</sup></caption>
+                                <tr>
+                                  <td style="background-color: #f00081; width: 20px;">&nbsp;</td>
+                                  <td>200 - 500</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #fa3c3c;">&nbsp;</td>
+                                  <td>150 - 200</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #f08127;">&nbsp;</td>
+                                  <td>100 - 150</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #e5af2d;">&nbsp;</td>
+                                  <td>75 - 100</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #e5dc31;">&nbsp;</td>
+                                  <td>50 - 75</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #a0e531;">&nbsp;</td>
+                                  <td>40 - 50</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #50f050;">&nbsp;</td>
+                                  <td>30 - 40</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #00dc00;">&nbsp;</td>
+                                  <td>20 - 30</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #50a4f4;">&nbsp;</td>
+                                  <td>10 - 20</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #2781f0;">&nbsp;</td>
+                                  <td>5 - 10</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #1363d1;">&nbsp;</td>
+                                  <td>2 - 5</td>
+                                </tr>
+                                <tr>
+                                  <td style="background-color: #dcdcdc;">&nbsp;</td>
+                                  <td> > 2</td>
+                                </tr>
+                              
+                              </table>`
+            }]
+        }],
+        defaultOpacity: 0.5,
+        collapseSimple: false,
+        detectStretched: true,
+        visibleIcon: 'icon icon-eye',
+        hiddenIcon: 'icon icon-eye-slash',
+    }).addTo(map);
+
+    return legend;
+}
+
+camsLegend(camsP25, 'Particulate Matter: < 2.5µm');
+camsLegend(camsP10, 'Particulate Matter: < 10µm');
+camsLegend(camsNO2, 'Nitrogen Dioxide');
+camsLegend(camsSO2, 'Sulphur Dioxide');
 
 
 // MAP Controls
@@ -269,6 +367,8 @@ let overlayMaps = {
     "Copernicus Atmosphere Monitoring Service - CAMS": {
         "PM 2.5": camsP25,
         "PM 10": camsP10,
+        "NO2": camsNO2,
+        "SO2": camsSO2,
 
     },
     "Air Quality Sensors": {
@@ -278,72 +378,44 @@ let overlayMaps = {
 
 
 let options = {
-    // Make the "Landmarks" group exclusive (use radio inputs)
-    exclusiveGroups: ['FCD Speeds'],
-    // Show a checkbox next to non-exclusive group labels for toggling all
+    exclusiveGroups: ['FCD Speeds', 'Copernicus Atmosphere Monitoring Service - CAMS'],
     groupCheckboxes: true
 };
 
 let layerControl = L.control.groupedLayers(baseMaps, overlayMaps, options).addTo(map);
 
+// On Load
+$(document).ready(function () {
+    loadFCData(tCurrent);
+    updateCAMS(tCurrent);
+    timeslider.attr('min', tCurrent - 84000);
+    timeslider.attr('max', tCurrent + 84000);
+    timeslider.attr('value', tCurrent);
+    timeslider.attr('step', 600);
 
-// // Panel
+});
 
-// let overLayers = [
+// On Slide
+timeslider.on("input change", function (e) {
+    timestamp = $(this).val()
+    updateCAMS(timestamp);
+    if (timestamp > tCurrent) {
+        loadFCData(tCurrent);
+    } else {
+        loadFCData(timestamp);
+        
+    }
 
-//     {
-//         group: 'FCD Speeds',
-//         radio: true,
-//         layers: [
-//             {
-//                 name: "INRIX",
-//                 active: true,
-//                 // icon: iconByName('bar'),
-//                 layer: inrixTraffic
-//             },
-//             {
-//                 name: "HERE",
-//                 // icon: iconByName('drinking_water'),
-//                 layer: hereTraffic
-//             },
-//             {
-//                 name: "TomTom",
-//                 // icon: iconByName('fuel'),
-//                 layer: tomtomTraffic
-//             }
+})
 
-//         ]
-//     },
+// On Map Move
+map.on("moveend", function () {
+    lat = L.latLng(map.getCenter()).lat
+    lon = L.latLng(map.getCenter()).lng
+    bounds = map.getBounds();
+    let boundsNew = `${bounds.getNorth()},${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()}`;
+
+});
 
 
-
-//     ];
-
-// let baseLayers = [
-// 	{
-// 		group: "Basemaps",
-// 		// icon: iconByName('parking'),
-// 		// collapsed: true,
-// 		layers: [
-// 			{
-// 				name: "CartoDB Positron",
-// 				// icon: iconByName('drinking_water'),
-// 				layer: positron
-// 			},
-// 			{
-// 				name: "CartoDB Dark",
-// 				// icon: iconByName('drinking_water'),
-// 				layer: dark
-// 			}
-// 		]
-// 	}
-// ];
-
-// let panelLayers = new L.Control.PanelLayers(baseLayers, overLayers, {
-//     // collapsed: true,
-//     title: 'Legend',
-// 	compact: true
-// });
-
-// map.addControl(panelLayers);
 
