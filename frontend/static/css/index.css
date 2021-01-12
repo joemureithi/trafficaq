@@ -35,3 +35,21 @@
 a {
     color: #009579;
 } */
+
+.legend {
+    line-height: 18px;
+    color: #555;
+    margin-bottom: 10px;
+    background-color: rgba(248, 248, 255, 0.705);
+    opacity: 1.0;
+    padding: 10px;
+    font-size: 1.2em;  
+}
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 10px;
+     
+    opacity: 1.0;
+}
