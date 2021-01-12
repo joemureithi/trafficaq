@@ -379,7 +379,7 @@ let overlayMaps = {
 
 let options = {
     exclusiveGroups: ['FCD Speeds', 'Copernicus Atmosphere Monitoring Service - CAMS'],
-    groupCheckboxes: true
+    groupCheckboxes: false
 };
 
 let layerControl = L.control.groupedLayers(baseMaps, overlayMaps, options).addTo(map);
