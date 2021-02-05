@@ -59,8 +59,9 @@ function getColor(d) {
 
 function fcdStyle(feature) {
     return {
-        color: getColor(feature.properties.speed),
-        weight: 5,
+        "color": getColor(feature.properties.speed),
+        "weight": 5,
+        "offset": 10,
     };
 }
 
